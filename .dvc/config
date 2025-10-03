@@ -1,0 +1,5 @@
+[core]
+    remote = myremote
+['remote "myremote"']
+    url = s3://fake-news-mlops-1759472662/fake-news-mlops
+    region = ap-south-1

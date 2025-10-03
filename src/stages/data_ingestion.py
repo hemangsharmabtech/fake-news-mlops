@@ -3,6 +3,7 @@ import joblib
 import yaml
 from sklearn.model_selection import train_test_split
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ def load_data():
     
     logger.info(f"Loading data with sample_size={sample_size}, test_size={test_size}")
     
-    # Load datasets
+    # Load datasets - FIXED PATHS
     df_fake = pd.read_csv('data/raw/Fake.csv').head(sample_size)
     df_true = pd.read_csv('data/raw/True.csv').head(sample_size)
     
