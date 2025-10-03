@@ -1,8 +1,52 @@
-data
-data/raw
-data/interim 
-data/processed
-model
+# Create a proper .gitignore file
+cat > .gitignore << 'EOF'
+# DVC files
+.dvc/tmp
+.dvc/cache
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter
+.ipynb_checkpoints
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Only ignore specific data subdirectories, not the entire data folder
+data/interim/
+data/processed/
+model/
 *.joblib
-__pycache__
-*.pyc
+EOF
