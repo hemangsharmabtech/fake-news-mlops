@@ -44,3 +44,60 @@ stages:
           cache: false
     outs:
       - model/lr_fake_news_model.joblib
+
+  # Random Forest specific data preparation
+  data_ingestion_rf:
+    cmd: python src/stages/rf/data_ingestion_rf.py
+    deps:
+      - data/raw/Fake.csv
+      - data/raw/True.csv
+      - src/stages/rf/data_ingestion_rf.py
+    params:
+      - rf.data.sample_size_per_class
+      - rf.data.test_size
+      - rf.data.random_state
+    outs:
+      - data/processed/rf/train_data.joblib
+      - data/processed/rf/test_data.joblib
+
+  # Random Forest specific feature engineering
+  feature_engineering_rf:
+    cmd: python src/stages/rf/feature_engineering_rf.py
+    deps:
+      - data/processed/rf/train_data.joblib
+      - data/processed/rf/test_data.joblib
+      - src/stages/rf/feature_engineering_rf.py
+    params:
+      - rf.featurize.max_features
+      - rf.featurize.ngram_range
+    outs:
+      - data/features/rf/X_train_tfidf.joblib
+      - data/features/rf/X_test_tfidf.joblib
+      - data/features/rf/vectorizer.joblib
+
+  # Random Forest model training (FIXED - removed arguments)
+  train_rf_model:
+    cmd: python src/stages/rf/train_rf.py
+    deps:
+      - data/features/rf/X_train_tfidf.joblib
+      - data/processed/rf/train_data.joblib
+      - src/stages/rf/train_rf.py
+    params:
+      - rf.train.n_estimators
+      - rf.train.max_depth
+      - rf.train.random_state
+      - rf.train.n_jobs
+    outs:
+      - models/rf/rf_fake_news_model.joblib
+
+  # Random Forest model evaluation
+  evaluate_rf_model:
+    cmd: python src/stages/rf/evaluate_rf.py
+    deps:
+      - models/rf/rf_fake_news_model.joblib
+      - data/features/rf/X_test_tfidf.joblib
+      - data/processed/rf/test_data.joblib
+      - src/stages/rf/evaluate_rf.py
+    metrics:
+      - metrics/rf/metrics.json:
+          cache: false

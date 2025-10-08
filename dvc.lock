@@ -1,7 +1,7 @@
 schema: '2.0'
 stages:
-  data_ingestion:
-    cmd: python src/stages/data_ingestion.py
+  data_ingestion_rf:
+    cmd: python src/stages/rf/data_ingestion_rf.py
     deps:
     - path: data/raw/Fake.csv
       hash: md5
@@ -11,86 +11,108 @@ stages:
       hash: md5
       md5: 5dc3f1f5ead42e9ce1cfedbb13999d07
       size: 25013428
-    - path: src/stages/data_ingestion.py
+    - path: src/stages/rf/data_ingestion_rf.py
       hash: md5
-      md5: 7183ba879073f44b4d41a647b8a18bea
-      size: 1618
+      md5: 476b11a747d22444c480f97512b1d462
+      size: 2430
     params:
       params.yaml:
-        data_ingestion.random_state: 42
-        data_ingestion.sample_size_per_class: 10000
-        data_ingestion.test_size: 0.2
+        rf.data.random_state: 42
+        rf.data.sample_size_per_class: 10000
+        rf.data.test_size: 0.2
     outs:
-    - path: data/processed/test_data.joblib
+    - path: data/processed/rf/test_data.joblib
       hash: md5
-      md5: 8c54141a995537bd432ba246b72967dd
-      size: 20793377
-    - path: data/processed/train_data.joblib
+      md5: 56e28e1d5147a6e848ac98e72c4182ad
+      size: 20584881
+    - path: data/processed/rf/train_data.joblib
       hash: md5
-      md5: 9201f15a40c8287e174eaa61ab21cc2c
-      size: 82570801
-  feature_engineering:
-    cmd: python src/stages/feature_engineering.py
+      md5: ae0ada60f0a7a048d775156d670424e3
+      size: 82779329
+  feature_engineering_rf:
+    cmd: python src/stages/rf/feature_engineering_rf.py
     deps:
-    - path: data/processed/test_data.joblib
+    - path: data/processed/rf/test_data.joblib
       hash: md5
-      md5: 8c54141a995537bd432ba246b72967dd
-      size: 20793377
-    - path: data/processed/train_data.joblib
+      md5: 56e28e1d5147a6e848ac98e72c4182ad
+      size: 20584881
+    - path: data/processed/rf/train_data.joblib
       hash: md5
-      md5: 9201f15a40c8287e174eaa61ab21cc2c
-      size: 82570801
-    - path: src/stages/feature_engineering.py
+      md5: ae0ada60f0a7a048d775156d670424e3
+      size: 82779329
+    - path: src/stages/rf/feature_engineering_rf.py
       hash: md5
-      md5: 33d24975c6032a27eb29875083562cd8
-      size: 2284
+      md5: a07e921785b52ad17df26deb07333974
+      size: 3003
+      isexec: true
     params:
       params.yaml:
-        feature_engineering.max_features: 15000
-        feature_engineering.ngram_range:
+        rf.featurize.max_features: 5000
+        rf.featurize.ngram_range:
         - 1
-        - 3
+        - 2
     outs:
-    - path: data/processed/X_test_tfidf.joblib
+    - path: data/features/rf/X_test_tfidf.joblib
       hash: md5
-      md5: 4114e059f4f2202f7ab4f2e5f6558f2a
-      size: 8271851
-    - path: data/processed/X_train_tfidf.joblib
+      md5: a8b0aa00edb54ab0214cb25e6ca6f044
+      size: 6536155
+    - path: data/features/rf/X_train_tfidf.joblib
       hash: md5
-      md5: cbeab49356a4c8cf636bcb2e06e74ec6
-      size: 33227603
-    - path: data/processed/vectorizer.joblib
+      md5: e78fb9bc7627b58b0439b32712735578
+      size: 26358219
+    - path: data/features/rf/vectorizer.joblib
       hash: md5
-      md5: dee442a6cb2403807245090d0b149028
-      size: 688393
-  model_building:
-    cmd: python src/stages/model_building.py
+      md5: 82c3b02778f55ebf038e5b8bbe4827f0
+      size: 189126
+  train_rf_model:
+    cmd: python src/stages/rf/train_rf.py
     deps:
-    - path: data/processed/X_test_tfidf.joblib
+    - path: data/features/rf/X_train_tfidf.joblib
       hash: md5
-      md5: 4114e059f4f2202f7ab4f2e5f6558f2a
-      size: 8271851
-    - path: data/processed/X_train_tfidf.joblib
+      md5: e78fb9bc7627b58b0439b32712735578
+      size: 26358219
+    - path: data/processed/rf/train_data.joblib
       hash: md5
-      md5: cbeab49356a4c8cf636bcb2e06e74ec6
-      size: 33227603
-    - path: src/stages/model_building.py
+      md5: ae0ada60f0a7a048d775156d670424e3
+      size: 82779329
+    - path: src/stages/rf/train_rf.py
       hash: md5
-      md5: a76ad51306e517384d7342942e2a9d03
-      size: 1949
+      md5: d34665c872349e12ab4338dc42169941
+      size: 1723
+      isexec: true
     params:
       params.yaml:
-        model_building.max_depth: 10
-        model_building.max_iter: 1000
-        model_building.model_name: logistic_regression
-        model_building.n_estimators: 100
-        model_building.solver: liblinear
+        rf.train.max_depth:
+        rf.train.n_estimators: 100
+        rf.train.n_jobs: -1
+        rf.train.random_state: 42
     outs:
-    - path: model/lr_fake_news_model.joblib
+    - path: models/rf/rf_fake_news_model.joblib
       hash: md5
-      md5: d6bd41b35a149d59f738c97ece73ae60
-      size: 120891
-    - path: model/metrics.json
+      md5: 6516a97ca91583840e9f5104b5c32a5b
+      size: 13035897
+  evaluate_rf_model:
+    cmd: python src/stages/rf/evaluate_rf.py
+    deps:
+    - path: data/features/rf/X_test_tfidf.joblib
       hash: md5
-      md5: 44dc65ae34ec9d91f770f764b444b41f
-      size: 128
+      md5: a8b0aa00edb54ab0214cb25e6ca6f044
+      size: 6536155
+    - path: data/processed/rf/test_data.joblib
+      hash: md5
+      md5: 56e28e1d5147a6e848ac98e72c4182ad
+      size: 20584881
+    - path: models/rf/rf_fake_news_model.joblib
+      hash: md5
+      md5: 6516a97ca91583840e9f5104b5c32a5b
+      size: 13035897
+    - path: src/stages/rf/evaluate_rf.py
+      hash: md5
+      md5: eaf45d307de9c04f8131d770ff0191c3
+      size: 2871
+      isexec: true
+    outs:
+    - path: metrics/rf/metrics.json
+      hash: md5
+      md5: 386cce109440a3ed4459e32e5813ab34
+      size: 373
