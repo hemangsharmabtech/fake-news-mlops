@@ -1,0 +1,64 @@
+# Core Data Science & ML
+pandas>=1.5.0
+numpy>=1.21.0
+scikit-learn>=1.0.0
+scipy>=1.7.0
+
+# Natural Language Processing
+nltk>=3.7
+textblob>=0.17.1
+gensim>=4.0.0
+
+# Model Serialization & Persistence
+joblib>=1.2.0
+pickle-mixin>=1.0.0
+
+# MLOps & Version Control
+dvc[s3]>=3.0.0  # Includes S3 support
+dvc-gdrive>=2.0.0  # Google Drive support (optional)
+
+# Configuration Management
+pyyaml>=6.0
+python-dotenv>=0.19.0
+
+# API & Deployment (Future Use)
+fastapi>=0.68.0
+uvicorn>=0.15.0
+pydantic>=1.8.0
+python-multipart>=0.0.5
+
+# Monitoring & Logging
+mlflow>=1.20.0
+wandb>=0.12.0  # Weights & Biases (optional)
+loguru>=0.5.0
+
+# Data Validation
+pandera>=0.9.0
+great-expectations>=0.15.0  # Optional for data quality
+
+# Visualization
+matplotlib>=3.5.0
+seaborn>=0.11.0
+plotly>=5.0.0
+
+# Utilities
+tqdm>=4.62.0
+click>=8.0.0
+colorama>=0.4.4
+
+# AWS Integration (for S3)
+boto3>=1.20.0
+s3fs>=2021.0.0
+
+# Testing
+pytest>=6.2.0
+pytest-cov>=2.12.0
+
+# Code Quality
+black>=21.0.0
+flake8>=3.9.0
+pre-commit>=2.15.0
+
+# Jupyter (for development)
+jupyter>=1.0.0
+ipykernel>=6.0.0
