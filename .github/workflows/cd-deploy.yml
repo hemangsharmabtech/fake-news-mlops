@@ -1,0 +1,79 @@
+name: CD - Model Deployment
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy-model:
+    name: Deploy Model
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Pull production models
+      run: |
+        dvc remote add myremote ${{ secrets.DVC_S3_BUCKET }}
+        dvc pull -r myremote
+
+    - name: Validate production models
+      run: |
+        python -c "
+        import joblib
+        import json
+        
+        # Load and validate models
+        rf_model = joblib.load('models/rf/rf_fake_news_model.joblib')
+        vectorizer = joblib.load('data/features/rf/vectorizer.joblib')
+        
+        # Validate metrics
+        with open('metrics/rf/metrics.json') as f:
+            metrics = json.load(f)
+        
+        assert metrics.get('accuracy', 0) > 0.95, 'Model accuracy below production threshold'
+        print('✅ Production model validation passed!')
+        "
+
+    - name: Package model for deployment
+      run: |
+        mkdir -p deployment_package
+        cp models/rf/rf_fake_news_model.joblib deployment_package/
+        cp data/features/rf/vectorizer.joblib deployment_package/
+        cp params.yaml deployment_package/
+        cp -r src/ deployment_package/
+        
+        # Create deployment info
+        echo \"Model deployed at: $(date)\" > deployment_package/deployment_info.txt
+        echo \"Git commit: ${{ github.sha }}\" >> deployment_package/deployment_info.txt
+
+    - name: Upload deployment package
+      uses: actions/upload-artifact@v4
+      with:
+        name: model-deployment-package
+        path: deployment_package/
+        retention-days: 30
+
+    - name: Notify deployment
+      run: |
+        echo "🚀 Model deployed successfully!"
+        echo "Commit: ${{ github.sha }}"
+        echo "Release: ${{ github.ref }}"
