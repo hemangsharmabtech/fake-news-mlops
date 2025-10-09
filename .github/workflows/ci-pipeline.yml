@@ -29,33 +29,6 @@ jobs:
         pip install -r requirements.txt
         pip install "dvc[s3]"
 
-    - name: Debug - Check if secrets are set
-      run: |
-        echo "Checking if AWS secrets are available..."
-        if [ -n "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
-          echo "✅ AWS_ACCESS_KEY_ID is set"
-        else
-          echo "❌ AWS_ACCESS_KEY_ID is NOT set"
-        fi
-        
-        if [ -n "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
-          echo "✅ AWS_SECRET_ACCESS_KEY is set"
-        else
-          echo "❌ AWS_SECRET_ACCESS_KEY is NOT set"
-        fi
-        
-        if [ -n "${{ secrets.AWS_REGION }}" ]; then
-          echo "✅ AWS_REGION is set: ${{ secrets.AWS_REGION }}"
-        else
-          echo "❌ AWS_REGION is NOT set"
-        fi
-        
-        if [ -n "${{ secrets.DVC_S3_BUCKET }}" ]; then
-          echo "✅ DVC_S3_BUCKET is set: ${{ secrets.DVC_S3_BUCKET }}"
-        else
-          echo "❌ DVC_S3_BUCKET is NOT set"
-        fi
-
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -63,16 +36,14 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Verify AWS credentials
+    - name: Setup DVC remote
       run: |
-        echo "Testing AWS credentials..."
-        aws sts get-caller-identity
-        echo "✅ AWS credentials working!"
-
-    - name: Setup DVC
-      run: |
-        dvc remote add myremote ${{ secrets.DVC_S3_BUCKET }}
+        # Remove existing remote if it exists
+        dvc remote remove myremote || true
+        # Add remote with force flag
+        dvc remote add myremote ${{ secrets.DVC_S3_BUCKET }} --force
         dvc remote modify myremote region ${{ secrets.AWS_REGION }}
+        echo "✅ DVC remote configured successfully"
 
     - name: Test DVC remote
       run: |
@@ -80,21 +51,61 @@ jobs:
         dvc remote list
         dvc status -r myremote
 
-    - name: Run basic pipeline validation
+    - name: Pull data from DVC
       run: |
-        echo "Running basic validations..."
-        # Test that essential files exist
-        ls -la dvc.yaml params.yaml
-        # Validate YAML files
-        python -c "import yaml; yaml.safe_load(open('dvc.yaml')); print('✅ dvc.yaml valid')"
-        python -c "import yaml; yaml.safe_load(open('params.yaml')); print('✅ params.yaml valid')"
+        echo "Pulling data from DVC remote..."
+        dvc pull -r myremote
+        echo "✅ DVC pull completed"
 
-    - name: Upload validation report
+    - name: Test data ingestion
+      run: |
+        dvc repro data_ingestion
+        echo "✅ Data ingestion stage completed"
+
+    - name: Test feature engineering
+      run: |
+        dvc repro feature_engineering
+        echo "✅ Feature engineering stage completed"
+
+    - name: Test model building
+      run: |
+        dvc repro model_building
+        echo "✅ Model building stage completed"
+
+    - name: Test Random Forest pipeline
+      run: |
+        dvc repro evaluate_rf_model
+        echo "✅ Random Forest pipeline completed"
+
+    - name: Validate metrics
+      run: |
+        python -c "
+        import json
+        # Check if metrics files exist and have valid content
+        with open('model/metrics.json') as f:
+            lr_metrics = json.load(f)
+        with open('metrics/rf/metrics.json') as f:
+            rf_metrics = json.load(f)
+        
+        # Validate accuracy thresholds
+        assert lr_metrics.get('accuracy', 0) > 0.9, 'Linear Regression accuracy too low'
+        assert rf_metrics.get('accuracy', 0) > 0.9, 'Random Forest accuracy too low'
+        print('✅ All metrics validation passed!')
+        "
+
+    - name: Upload metrics as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: pipeline-metrics
+        path: |
+          model/metrics.json
+          metrics/rf/metrics.json
+        retention-days: 30
+
+    - name: Upload DVC cache
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: validation-report
-        path: |
-          dvc.yaml
-          params.yaml
+        name: dvc-cache
+        path: .dvc/cache
         retention-days: 1
